@@ -94,14 +94,14 @@ struct ContentView: View {
                     .pickerStyle(.segmented)
                 }
                 Section {
-                    List($roundQuestions, id: \.self) { question in
+                    List(roundQuestions, id: \.self) { question in
                         HStack {
-                            Image(systemName: "\(question.wrappedValue.index ).circle")
+                            Image(systemName: "\(question.index ).circle")
                                 .foregroundColor(.secondary)
                                 .scaleEffect(0.8)
-                            Text("\(question.wrappedValue.factorA)")
+                            Text("\(question.factorA)")
                             Text("x")
-                            Text("\(question.wrappedValue.factorB)")
+                            Text("\(question.factorB)")
                             Text("=")
                         }
                         .font(.largeTitle)
