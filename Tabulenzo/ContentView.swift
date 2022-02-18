@@ -26,7 +26,7 @@ struct RoundQuestionModel: Hashable {
     }
     
     let index: Int
-    var status: Status = .unrevealed {
+    var status: Status = .active {
         didSet {
             // TODO implement timing
 //            switch status {
@@ -65,6 +65,10 @@ struct ContentView: View {
     @State private var roundTableNumber = 5
     @State private var roundQuestionsQty = 5
     @State private var roundQuestions: [RoundQuestionModel] = []
+    @State private var questionGuess: Int = -1
+    
+    @State private var textBlinkOpacity: Double = 1.0
+    @FocusState private var questionGuessTextInputIsFocused: Bool
     
     func startNewRound() {
         roundQuestions = Array(1...roundQuestionsQty).map {
@@ -72,40 +76,83 @@ struct ContentView: View {
         }
     }
     
+    func processUserGuess(in question: inout RoundQuestionModel) {
+        question.productGuess = questionGuess
+    }
+    
     var body: some View {
-        NavigationView {
-            VStack {
-                Section {
-                    SectionTitle(title: "Quer treinar qual tabuada?")
-                    Picker("number", selection: $roundTableNumber) {
-                        ForEach(1..<10) {
-                            Text("\($0)").tag($0)
-                        }
+        VStack {
+            Section {
+                SectionTitle(title: "Quer treinar qual tabuada?")
+                Picker("number", selection: $roundTableNumber) {
+                    ForEach(1..<10) {
+                        Text("\($0)").tag($0)
                     }
-                    .pickerStyle(.segmented)
                 }
-                Section {
-                    SectionTitle(title: "Quantas perguntas responder?")
-                    Picker("questions", selection: $roundQuestionsQty) {
-                        Text("5").tag(5)
-                        Text("10").tag(10)
-                        Text("20").tag(20)
-                    }
-                    .pickerStyle(.segmented)
+                .pickerStyle(.segmented)
+            }
+            Section {
+                SectionTitle(title: "Quantas perguntas responder?")
+                Picker("questions", selection: $roundQuestionsQty) {
+                    Text("5").tag(5)
+                    Text("10").tag(10)
+                    Text("20").tag(20)
                 }
-                Section {
-                    List(roundQuestions, id: \.self) { question in
-                        HStack {
-                            Image(systemName: "\(question.index ).circle")
-                                .foregroundColor(.secondary)
-                                .scaleEffect(0.8)
+                .pickerStyle(.segmented)
+            }
+            Section {
+                List($roundQuestions, id: \.self) { $question in
+                    HStack {
+                        Image(systemName: "\(question.index ).circle")
+                            .foregroundColor(.secondary)
+                            .scaleEffect(0.6)
+                        Group {
                             Text("\(question.factorA)")
                             Text("x")
                             Text("\(question.factorB)")
                             Text("=")
                         }
-                        .font(.largeTitle)
+                        switch question.status {
+                        case .unrevealed:
+                            Text("__")
+                                .kerning(5)
+                                .foregroundColor(.secondary)
+                                .opacity(textBlinkOpacity)
+                                .onTapGesture {
+                                    question.status = .active
+                                }
+                                .animation(.default.speed(1.5).repeatForever(), value: textBlinkOpacity)
+                                .onAppear {
+                                    textBlinkOpacity = 0
+                                }
+                                .onDisappear {
+                                    textBlinkOpacity = 1
+                                }
+                        case .active:
+                            ZStack (alignment: .trailing) {
+                                TextField("__", value: $questionGuess, format: .number)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .focused($questionGuessTextInputIsFocused)
+                            }
+                            Spacer()
+                            Button() {
+                                processUserGuess(in: &question)
+                            } label: {
+                                Image(systemName: "questionmark.square.dashed")
+                            }
+                            
+                        case .error:
+                            Text("\(question.productGuess)").foregroundColor(.red)
+                        case .right:
+                            Text("\(question.productGuess)").foregroundColor(.green)
+                        default:
+                            Text("__")
+                        }
+                        
                     }
+                    .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
+
                 }
             }
         }
@@ -119,6 +166,7 @@ struct ContentView: View {
             startNewRound()
         }
     }
+    
 }
 
 struct ContentView_Previews: PreviewProvider {
