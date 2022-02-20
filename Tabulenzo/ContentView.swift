@@ -26,7 +26,7 @@ struct RoundQuestionModel: Hashable {
     }
     
     let index: Int
-    var status: Status = .active {
+    var status: Status = .unrevealed {
         didSet {
             // TODO implement timing
 //            switch status {
@@ -65,19 +65,53 @@ struct ContentView: View {
     @State private var roundTableNumber = 5
     @State private var roundQuestionsQty = 5
     @State private var roundQuestions: [RoundQuestionModel] = []
-    @State private var questionGuess: Int = -1
+    @State private var questionGuess: String = ""
+    @State private var currentQuestionArrayIndex: Int = 0
+    @State private var nextQuestionArrayIndex: Int = 1
+    @State private var roundsCounter: Int = 1
+    
+    var isLastQuestion: Bool {
+        currentQuestionArrayIndex == roundQuestions.count - 1
+    }
+    
+    var isSecondToLastQuestion: Bool {
+        currentQuestionArrayIndex == roundQuestions.count - 2
+    }
     
     @State private var textBlinkOpacity: Double = 1.0
-    @FocusState private var questionGuessTextInputIsFocused: Bool
+
     
     func startNewRound() {
+        roundsCounter += 1
         roundQuestions = Array(1...roundQuestionsQty).map {
             RoundQuestionModel(index: $0, factorA: roundTableNumber)
         }
+        currentQuestionArrayIndex = 0
+        nextQuestionArrayIndex = 1
     }
     
     func processUserGuess(in question: inout RoundQuestionModel) {
-        question.productGuess = questionGuess
+        question.productGuess = Int(questionGuess) ?? 0
+        questionGuess = ""
+        if !isLastQuestion {
+            // Starting next question automatically
+            roundQuestions[nextQuestionArrayIndex].status = .active
+            currentQuestionArrayIndex += 1
+            nextQuestionArrayIndex += 1
+        } else {
+            // TODO implement end of the Round
+        }
+    }
+    
+    func questionColor(question: RoundQuestionModel) -> Color {
+        switch question.status {
+        case .right:
+            return Color.green
+        case .error:
+            return Color.red
+        default:
+            return Color.secondary
+        }
     }
     
     var body: some View {
@@ -103,56 +137,47 @@ struct ContentView: View {
             Section {
                 List($roundQuestions, id: \.self) { $question in
                     HStack {
-                        Image(systemName: "\(question.index ).circle")
-                            .foregroundColor(.secondary)
-                            .scaleEffect(0.6)
                         Group {
+                            Image(systemName: "\(question.index ).circle")
+                                .foregroundColor(questionColor(question: question))
+                                .scaleEffect(0.6)
                             Text("\(question.factorA)")
                             Text("x")
-                            Text("\(question.factorB)")
+                            question.status == .unrevealed ? Text("?") : Text("\(question.factorB)")
                             Text("=")
-                        }
-                        switch question.status {
-                        case .unrevealed:
-                            Text("__")
-                                .kerning(5)
-                                .foregroundColor(.secondary)
-                                .opacity(textBlinkOpacity)
-                                .onTapGesture {
-                                    question.status = .active
+                            switch question.status {
+                            case .unrevealed:
+                                if question.index == currentQuestionArrayIndex + 1 {
+                                    Spacer()
+                                    Button("Go!") {
+                                        question.status = .active
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .font(.none)
+                                    .lineLimit(1)
                                 }
-                                .animation(.default.speed(1.5).repeatForever(), value: textBlinkOpacity)
-                                .onAppear {
-                                    textBlinkOpacity = 0
+                            case .active:
+                                ZStack (alignment: .trailing) {
+                                    TextField("??", text: $questionGuess )
+                                        .textFieldStyle(.roundedBorder)
+                                        .keyboardType(.decimalPad)
                                 }
-                                .onDisappear {
-                                    textBlinkOpacity = 1
+                                Button("?") {
+                                    processUserGuess(in: &question)
                                 }
-                        case .active:
-                            ZStack (alignment: .trailing) {
-                                TextField("__", value: $questionGuess, format: .number)
-                                    .keyboardType(.numberPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .focused($questionGuessTextInputIsFocused)
+                                .buttonStyle(.borderedProminent)
+                                .font(.none)
+                            case .error:
+                                Text("\(question.productGuess)").foregroundColor(.red)
+                            case .right:
+                                Text("\(question.productGuess)").foregroundColor(.green)
+                            default:
+                                Text("__")
                             }
-                            Spacer()
-                            Button() {
-                                processUserGuess(in: &question)
-                            } label: {
-                                Image(systemName: "questionmark.square.dashed")
-                            }
-                            
-                        case .error:
-                            Text("\(question.productGuess)").foregroundColor(.red)
-                        case .right:
-                            Text("\(question.productGuess)").foregroundColor(.green)
-                        default:
-                            Text("__")
                         }
-                        
+                        .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
+                        .padding(.vertical)
                     }
-                    .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
-
                 }
             }
         }
