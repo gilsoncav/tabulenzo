@@ -13,6 +13,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4D6E060927C3066600E7F235 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		4D6E060B27C309DC00E7F235 /* IMG_0934.PNG */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = IMG_0934.PNG; sourceTree = "<group>"; };
+		4D6E060D27C30ED400E7F235 /* 2022-02-20-iphone-sim-capture.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "2022-02-20-iphone-sim-capture.gif"; sourceTree = "<group>"; };
 		4DF2CE5227BC54F9001A2E02 /* Tabulenzo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tabulenzo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DF2CE5527BC54F9001A2E02 /* TabulenzoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabulenzoApp.swift; sourceTree = "<group>"; };
 		4DF2CE5727BC54F9001A2E02 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -30,9 +33,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4D6E060A27C3091100E7F235 /* readme-assets */ = {
+			isa = PBXGroup;
+			children = (
+				4D6E060D27C30ED400E7F235 /* 2022-02-20-iphone-sim-capture.gif */,
+				4D6E060B27C309DC00E7F235 /* IMG_0934.PNG */,
+			);
+			path = "readme-assets";
+			sourceTree = "<group>";
+		};
 		4DF2CE4927BC54F9001A2E02 = {
 			isa = PBXGroup;
 			children = (
+				4D6E060A27C3091100E7F235 /* readme-assets */,
+				4D6E060927C3066600E7F235 /* README.md */,
 				4DF2CE5427BC54F9001A2E02 /* Tabulenzo */,
 				4DF2CE5327BC54F9001A2E02 /* Products */,
 			);
