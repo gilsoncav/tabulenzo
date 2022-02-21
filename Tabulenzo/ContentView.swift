@@ -69,6 +69,7 @@ struct ContentView: View {
     @State private var currentQuestionArrayIndex: Int = 0
     @State private var nextQuestionArrayIndex: Int = 1
     @State private var roundsCounter: Int = 1
+    @FocusState private var activeQuestionTextFieldIsFocused: Bool
     
     var isLastQuestion: Bool {
         currentQuestionArrayIndex == roundQuestions.count - 1
@@ -78,8 +79,6 @@ struct ContentView: View {
         currentQuestionArrayIndex == roundQuestions.count - 2
     }
     
-    @State private var textBlinkOpacity: Double = 1.0
-
     
     func startNewRound() {
         roundsCounter += 1
@@ -90,8 +89,8 @@ struct ContentView: View {
         nextQuestionArrayIndex = 1
     }
     
-    func processUserGuess(in question: inout RoundQuestionModel) {
-        question.productGuess = Int(questionGuess) ?? 0
+    func processUserGuess() {
+        roundQuestions[currentQuestionArrayIndex].productGuess = Int(questionGuess) ?? 0
         questionGuess = ""
         if !isLastQuestion {
             // Starting next question automatically
@@ -101,6 +100,7 @@ struct ContentView: View {
         } else {
             // TODO implement end of the Round
         }
+        activeQuestionTextFieldIsFocused = false
     }
     
     func questionColor(question: RoundQuestionModel) -> Color {
@@ -161,9 +161,15 @@ struct ContentView: View {
                                     TextField("??", text: $questionGuess )
                                         .textFieldStyle(.roundedBorder)
                                         .keyboardType(.decimalPad)
+                                        .focused($activeQuestionTextFieldIsFocused)
                                 }
+                                .onAppear {
+                                    activeQuestionTextFieldIsFocused = true
+                                }
+
+
                                 Button("?") {
-                                    processUserGuess(in: &question)
+                                    processUserGuess()
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .font(.none)
@@ -177,6 +183,18 @@ struct ContentView: View {
                         }
                         .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
                         .padding(.vertical)
+
+                    }
+                    
+                }
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    HStack {
+                        Spacer()
+                        Button("Did i got right?") {
+                            processUserGuess()
+                        }
                     }
                 }
             }
