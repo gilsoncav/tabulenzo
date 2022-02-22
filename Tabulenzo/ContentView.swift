@@ -17,7 +17,7 @@ struct SectionTitle: View {
 }
 
 struct RoundQuestionModel: Hashable, Identifiable {
-    let id = UUID()
+    let id = UUID().uuidString
     
     enum Status {
         case unrevealed
@@ -64,6 +64,11 @@ struct RoundQuestionModel: Hashable, Identifiable {
 }
 
 struct ContentView: View {
+    enum FocusableQuestion: Hashable {
+        case none
+        case row(id: String)
+    }
+    
     @State private var roundTableNumber = 5
     @State private var roundQuestionsQty = 5
     @State private var roundQuestions: [RoundQuestionModel] = []
@@ -71,7 +76,7 @@ struct ContentView: View {
     @State private var currentQuestionArrayIndex: Int = 0
     @State private var nextQuestionArrayIndex: Int = 1
     @State private var roundsCounter: Int = 1
-    @FocusState private var activeQuestionTextFieldIsFocused: Bool
+    @FocusState private var focusedQuestion: FocusableQuestion?
     
     var isLastQuestion: Bool {
         currentQuestionArrayIndex == roundQuestions.count - 1
@@ -101,6 +106,7 @@ struct ContentView: View {
             nextQuestionArrayIndex += 1
         } else {
             // TODO implement end of the Round
+            focusedQuestion = FocusableQuestion.none
         }
     }
     
@@ -162,13 +168,10 @@ struct ContentView: View {
                                     TextField("??", text: $questionGuess )
                                         .textFieldStyle(.roundedBorder)
                                         .keyboardType(.numberPad)
-                                        .focused($activeQuestionTextFieldIsFocused)
-                                        .onDisappear {
-                                            activeQuestionTextFieldIsFocused = false
+                                        .focused($focusedQuestion, equals: .row(id: question.id))
+                                        .onAppear {
+                                            focusedQuestion = .row(id: question.id)
                                         }
-                                }
-                                .onAppear {
-                                    activeQuestionTextFieldIsFocused = true
                                 }
 
                                 Button("?") {
