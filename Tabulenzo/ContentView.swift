@@ -16,7 +16,9 @@ struct SectionTitle: View {
     }
 }
 
-struct RoundQuestionModel: Hashable {
+struct RoundQuestionModel: Hashable, Identifiable {
+    let id = UUID()
+    
     enum Status {
         case unrevealed
         case active
@@ -100,7 +102,6 @@ struct ContentView: View {
         } else {
             // TODO implement end of the Round
         }
-        activeQuestionTextFieldIsFocused = false
     }
     
     func questionColor(question: RoundQuestionModel) -> Color {
@@ -135,7 +136,7 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
             }
             Section {
-                List($roundQuestions, id: \.self) { $question in
+                List($roundQuestions) { $question in
                     HStack {
                         Group {
                             Image(systemName: "\(question.index ).circle")
@@ -160,13 +161,15 @@ struct ContentView: View {
                                 ZStack (alignment: .trailing) {
                                     TextField("??", text: $questionGuess )
                                         .textFieldStyle(.roundedBorder)
-                                        .keyboardType(.decimalPad)
+                                        .keyboardType(.numberPad)
                                         .focused($activeQuestionTextFieldIsFocused)
+                                        .onDisappear {
+                                            activeQuestionTextFieldIsFocused = false
+                                        }
                                 }
                                 .onAppear {
                                     activeQuestionTextFieldIsFocused = true
                                 }
-
 
                                 Button("?") {
                                     processUserGuess()
@@ -183,16 +186,14 @@ struct ContentView: View {
                         }
                         .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
                         .padding(.vertical)
-
                     }
-                    
                 }
             }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     HStack {
                         Spacer()
-                        Button("Did i got right?") {
+                        Button("Did i got it right?") {
                             processUserGuess()
                         }
                     }
@@ -214,6 +215,9 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        // ATTENTION: workaround to fix a xCode preview bug as reported here: https://www.hackingwithswift.com/forums/swiftui/focusstate-breaking-preview/11396
+        ZStack {
+            ContentView()
+        }
     }
 }
