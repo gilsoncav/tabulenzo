@@ -31,13 +31,6 @@ struct RoundQuestionModel: Hashable, Identifiable {
     var status: Status = .unrevealed {
         didSet {
             // TODO implement timing
-//            switch status {
-//            case .timedOut:
-//                // TODO register the final time
-//            case .active:
-//                // TODO register the start time
-//            default:
-//            }
         }
     }
     let factorA: Int
@@ -69,6 +62,13 @@ struct ContentView: View {
         case row(id: String)
     }
     
+    enum GameState {
+        case notStarted
+        case roundReady
+        case roundActive
+    }
+    
+    @State private var state: GameState = .notStarted
     @State private var roundTableNumber = 5
     @State private var roundQuestionsQty = 5
     @State private var roundQuestions: [RoundQuestionModel] = []
@@ -86,7 +86,6 @@ struct ContentView: View {
         currentQuestionArrayIndex == roundQuestions.count - 2
     }
     
-    
     func startNewRound() {
         roundsCounter += 1
         roundQuestions = Array(1...roundQuestionsQty).map {
@@ -94,9 +93,16 @@ struct ContentView: View {
         }
         currentQuestionArrayIndex = 0
         nextQuestionArrayIndex = 1
+        state = .roundReady
+    }
+    
+    func activateRound() {
+        roundQuestions[0].status = .active
+        state = .roundActive
     }
     
     func processUserGuess() {
+        state = .roundActive
         roundQuestions[currentQuestionArrayIndex].productGuess = Int(questionGuess) ?? 0
         questionGuess = ""
         if !isLastQuestion {
@@ -121,96 +127,116 @@ struct ContentView: View {
         }
     }
     
+    
+    
     var body: some View {
-        VStack {
-            Section {
-                SectionTitle(title: "Quer treinar qual tabuada?")
-                Picker("number", selection: $roundTableNumber) {
-                    ForEach(1..<10) {
-                        Text("\($0)").tag($0)
+        ZStack (alignment: .bottomTrailing) {
+            VStack {
+                Section {
+                    SectionTitle(title: "Quer treinar qual tabuada?")
+                    Picker("number", selection: $roundTableNumber) {
+                        ForEach(1..<10) {
+                            Text("\($0)").tag($0)
+                        }
                     }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
-            }
-            Section {
-                SectionTitle(title: "Quantas perguntas responder?")
-                Picker("questions", selection: $roundQuestionsQty) {
-                    Text("5").tag(5)
-                    Text("10").tag(10)
-                    Text("20").tag(20)
+                Section {
+                    SectionTitle(title: "Quantas perguntas responder?")
+                    Picker("questions", selection: $roundQuestionsQty) {
+                        Text("5").tag(5)
+                        Text("10").tag(10)
+                        Text("20").tag(20)
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
-            }
-            Section {
-                List($roundQuestions) { $question in
-                    HStack {
-                        Group {
-                            Image(systemName: "\(question.index ).circle")
-                                .foregroundColor(questionColor(question: question))
-                                .scaleEffect(0.6)
-                            Text("\(question.factorA)")
-                            Text("x")
-                            question.status == .unrevealed ? Text("?") : Text("\(question.factorB)")
-                            Text("=")
-                            switch question.status {
-                            case .unrevealed:
-                                if question.index == currentQuestionArrayIndex + 1 {
+                ScrollViewReader { scroll in
+                    List($roundQuestions) { $question in
+                        HStack {
+                            Group {
+                                Image(systemName: "\(question.index).circle")
+                                    .foregroundColor(questionColor(question: question))
+                                    .scaleEffect(0.6)
+                                Text("\(question.factorA)")
+                                Text("x")
+                                question.status == .unrevealed ? Text("?") : Text("\(question.factorB)")
+                                Text("=")
+                                switch question.status {
+                                case .unrevealed:
                                     Spacer()
-                                    Button("Go!") {
-                                        question.status = .active
+                                case .active:
+                                    ZStack(alignment: .trailing) {
+                                        TextField("??", text: $questionGuess)
+                                            .textFieldStyle(.roundedBorder)
+                                            .keyboardType(.numberPad)
+                                            .focused($focusedQuestion, equals: .row(id: question.id))
+                                            .onAppear {
+                                                focusedQuestion = .row(id: question.id)
+                                            }
+                                            .task {
+                                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                                if case .row(let id) = focusedQuestion {
+                                                    withAnimation {
+                                                        scroll.scrollTo(id, anchor: .bottom)
+                                                    }
+                                                }
+                                            }
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .font(.none)
-                                    .lineLimit(1)
+                                case .error:
+                                    Text("\(question.productGuess)").foregroundColor(.red)
+                                case .right:
+                                    Text("\(question.productGuess)").foregroundColor(.green)
+                                default:
+                                    Text("__")
                                 }
-                            case .active:
-                                ZStack (alignment: .trailing) {
-                                    TextField("??", text: $questionGuess )
-                                        .textFieldStyle(.roundedBorder)
-                                        .keyboardType(.numberPad)
-                                        .focused($focusedQuestion, equals: .row(id: question.id))
-                                        .onAppear {
-                                            focusedQuestion = .row(id: question.id)
-                                        }
-                                }
-
-                                Button("?") {
-                                    processUserGuess()
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .font(.none)
-                            case .error:
-                                Text("\(question.productGuess)").foregroundColor(.red)
-                            case .right:
-                                Text("\(question.productGuess)").foregroundColor(.green)
-                            default:
-                                Text("__")
                             }
-                        }
-                        .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
-                        .padding(.vertical)
-                    }
-                }
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    HStack {
-                        Spacer()
-                        Button("Did i got it right?") {
-                            processUserGuess()
+                            .font(.custom("SF Compact", size: 40, relativeTo: .largeTitle))
+                            .padding(.vertical)
                         }
                     }
                 }
             }
-        }
-        .onAppear {
-            startNewRound()
-        }
-        .onChange(of: roundTableNumber) { _ in
-            startNewRound()
-        }
-        .onChange(of: roundQuestionsQty) { _ in
-            startNewRound()
+            .onAppear {
+                startNewRound()
+            }
+            .onChange(of: roundTableNumber) { _ in
+                startNewRound()
+            }
+            .onChange(of: roundQuestionsQty) { _ in
+                startNewRound()
+            }
+            Button {
+                print("state")
+                print(state)
+                switch state {
+                case .notStarted:
+                    activateRound()
+                case .roundReady:
+                    activateRound()
+                case .roundActive:
+                    processUserGuess()
+                }
+            } label: {
+                switch state {
+                case .notStarted, .roundReady:
+                    Image(systemName: "brain")
+                        .font(.system(size: 30))
+                        .frame(width: 70, height: 70)
+                        .foregroundColor(.white)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(radius: 3)
+                case .roundActive:
+                    Image(systemName: "questionmark.diamond")
+                        .font(.system(size: 30))
+                        .frame(width: 70, height: 70)
+                        .foregroundColor(.white)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(radius: 3)
+                }
+            }
+            .padding([.trailing, .bottom], 25)
         }
     }
     
